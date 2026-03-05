@@ -1,7 +1,7 @@
 {
   "name": "@synergenius/flowweaver-pack-cicd",
-  "version": "0.1.0",
-  "description": "CI/CD pipeline node types for Flow Weaver — checkout, setup, test, build, deploy, Docker, and more",
+  "version": "0.2.0",
+  "description": "CI/CD pipeline infrastructure and node types for Flow Weaver: tag handler, validation rules, job graph builder, and platform-native CI/CD node stubs",
   "keywords": [
     "flowweaver-marketplace-pack",
     "flow-weaver",
@@ -13,11 +13,11 @@
   ],
   "flowWeaver": {
     "type": "marketplace-pack",
-    "engineVersion": ">=0.9.0",
+    "engineVersion": ">=0.17.7",
     "categories": ["cicd", "automation", "devops"]
   },
   "peerDependencies": {
-    "@synergenius/flow-weaver": ">=0.9.0"
+    "@synergenius/flow-weaver": ">=0.17.7"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,0 +1,31 @@
+{
+  "manifestVersion": 2,
+  "name": "@synergenius/flowweaver-pack-cicd",
+  "version": "0.2.0",
+  "nodeTypes": [],
+  "workflows": [],
+  "patterns": [],
+  "tagHandlers": [
+    {
+      "tags": [
+        "secret", "runner", "cache", "artifact", "environment", "matrix",
+        "service", "concurrency", "job", "stage", "variables",
+        "before_script", "tags", "includes", "_cicdTrigger"
+      ],
+      "namespace": "cicd",
+      "scope": "workflow",
+      "file": "dist/tag-handler.js",
+      "exportName": "cicdTagHandler"
+    }
+  ],
+  "validationRuleSets": [
+    {
+      "name": "CI/CD Rules",
+      "namespace": "cicd",
+      "file": "dist/rules.js",
+      "detectExport": "isCICDWorkflow",
+      "rulesExport": "getCICDValidationRules"
+    }
+  ],
+  "exportTargets": []
+}
