@@ -14,7 +14,11 @@
   "flowWeaver": {
     "type": "marketplace-pack",
     "engineVersion": ">=0.17.7",
-    "categories": ["cicd", "automation", "devops"]
+    "categories": [
+      "cicd",
+      "automation",
+      "devops"
+    ]
   },
   "peerDependencies": {
     "@synergenius/flow-weaver": ">=0.17.7"
@@ -31,9 +35,11 @@
   "scripts": {
     "build": "tsc",
     "pack:manifest": "flow-weaver market pack",
-    "prepublishOnly": "npm run build && npm run pack:manifest"
+    "prepublishOnly": "npm run build && npm run pack:manifest",
+    "release": "tsx scripts/release.ts"
   },
   "devDependencies": {
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   },
   "license": "MIT",
