@@ -40,6 +40,16 @@ export function buildJobGraph(ast: TWorkflowAST): CICDJob[] {
   }
 
   const jobDeps = new Map<string, Set<string>>();
+  // Track cross-job port connections for artifact wiring
+  type CrossJobPort = {
+    fromJob: string;
+    toJob: string;
+    portName: string;
+    portMeta?: Record<string, unknown>;
+    dataType?: string;
+  };
+  const crossJobPorts: CrossJobPort[] = [];
+
   for (const conn of ast.connections) {
     if (conn.from.node.startsWith('secret:')) continue;
     if (conn.from.node === 'Start' || conn.to.node === 'Exit') continue;
@@ -50,6 +60,18 @@ export function buildJobGraph(ast: TWorkflowAST): CICDJob[] {
     if (fromJob && toJob && fromJob !== toJob) {
       if (!jobDeps.has(toJob)) jobDeps.set(toJob, new Set());
       jobDeps.get(toJob)!.add(fromJob);
+
+      // Look up source port definition for artifact wiring
+      const fromNodeType = ast.instances.find(i => i.id === conn.from.node)?.nodeType;
+      const nt = fromNodeType ? nodeTypeLookup.get(fromNodeType) : undefined;
+      const portDef = nt?.outputs?.[conn.from.port];
+      crossJobPorts.push({
+        fromJob,
+        toJob,
+        portName: conn.from.port,
+        portMeta: portDef?.metadata as Record<string, unknown> | undefined,
+        dataType: portDef?.dataType,
+      });
     }
   }
 
@@ -82,10 +104,83 @@ export function buildJobGraph(ast: TWorkflowAST): CICDJob[] {
     });
   }
 
+  // Apply port-derived artifact wiring for cross-job data connections
+  if (crossJobPorts.length > 0) {
+    const seen = new Set<string>();
+    for (const cp of crossJobPorts) {
+      const key = `${cp.fromJob}:${cp.portName}:${cp.toJob}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const producer = jobs.find(j => j.id === cp.fromJob);
+      const consumer = jobs.find(j => j.id === cp.toJob);
+      if (!producer || !consumer) continue;
+
+      const artifactPath = cp.portMeta?.artifactPath as string | undefined;
+      const isDotenv = cp.portMeta?.dotenv === true;
+      const isStepOnly = cp.dataType === 'STEP';
+
+      if (isStepOnly || (!artifactPath && !isDotenv)) {
+        // Step-only or no artifact metadata: track as needs-without-artifacts
+        consumer.needsWithoutArtifacts = consumer.needsWithoutArtifacts || [];
+        if (!consumer.needsWithoutArtifacts.includes(cp.fromJob)) {
+          consumer.needsWithoutArtifacts.push(cp.fromJob);
+        }
+        continue;
+      }
+
+      if (artifactPath) {
+        const artifactName = `${cp.fromJob}-${cp.portName}`;
+
+        // Producer: add upload artifact
+        producer.uploadArtifacts = producer.uploadArtifacts || [];
+        if (!producer.uploadArtifacts.some(a => a.name === artifactName)) {
+          producer.uploadArtifacts.push({ name: artifactName, path: artifactPath });
+        }
+
+        // Consumer: add download artifact
+        consumer.downloadArtifacts = consumer.downloadArtifacts || [];
+        if (!consumer.downloadArtifacts.includes(artifactName)) {
+          consumer.downloadArtifacts.push(artifactName);
+        }
+        consumer.downloadArtifactPaths = consumer.downloadArtifactPaths || {};
+        consumer.downloadArtifactPaths[artifactName] = artifactPath;
+      }
+
+      if (isDotenv) {
+        const dotenvName = `${cp.fromJob}-${cp.portName}-dotenv`;
+        const dotenvPath = `.fw-dotenv/${cp.fromJob}-${cp.portName}.env`;
+
+        // Producer: add dotenv upload artifact
+        producer.uploadArtifacts = producer.uploadArtifacts || [];
+        if (!producer.uploadArtifacts.some(a => a.name === dotenvName)) {
+          producer.uploadArtifacts.push({ name: dotenvName, path: dotenvPath });
+        }
+
+        // Consumer: track dotenv artifact for loading
+        consumer.dotenvArtifacts = consumer.dotenvArtifacts || [];
+        consumer.dotenvArtifacts.push({ name: dotenvName, path: dotenvPath });
+
+        consumer.downloadArtifacts = consumer.downloadArtifacts || [];
+        if (!consumer.downloadArtifacts.includes(dotenvName)) {
+          consumer.downloadArtifacts.push(dotenvName);
+        }
+      }
+    }
+  }
+
   // Apply @job configs
   // The tag handler produces `stage` and `retryWhen` fields that aren't in
   // the core TCICDJobConfig type yet, so we cast to access them.
-  type ExtendedJobConfig = { stage?: string; retryWhen?: string[] };
+  type ExtendedJobConfig = {
+    stage?: string; retryWhen?: string[];
+    needsArtifactControl?: Record<string, boolean>;
+    optionalNeeds?: string[];
+    parallel?: number;
+    beforeScript?: string[] | null;
+    skipDependencies?: boolean;
+    artifacts?: import('@synergenius/flow-weaver/ast').TCICDArtifact[];
+  };
   const jobConfigs = ast.options?.cicd?.jobs;
   if (jobConfigs) {
     for (const jc of jobConfigs) {
@@ -105,6 +200,15 @@ export function buildJobGraph(ast: TWorkflowAST): CICDJob[] {
       const ext = jc as unknown as ExtendedJobConfig;
       if (ext.stage) job.stage = ext.stage;
       if (ext.retryWhen) job.retryWhen = ext.retryWhen;
+      if (ext.needsArtifactControl) job.needsArtifactControl = ext.needsArtifactControl;
+      if (ext.optionalNeeds) job.optionalNeeds = ext.optionalNeeds;
+      if (ext.parallel) job.parallel = ext.parallel;
+      if (ext.beforeScript !== undefined) job.beforeScript = ext.beforeScript;
+      if (ext.skipDependencies) job.skipDependencies = ext.skipDependencies;
+      if (ext.artifacts) {
+        job.uploadArtifacts = job.uploadArtifacts || [];
+        job.uploadArtifacts.push(...ext.artifacts);
+      }
     }
   }
 
@@ -132,6 +236,21 @@ export function buildJobGraph(ast: TWorkflowAST): CICDJob[] {
     }
   }
 
+  // Apply per-job service assignments (from @service job="X")
+  const cicdServices = ast.options?.cicd?.services;
+  if (cicdServices && cicdServices.length > 0) {
+    for (const svc of cicdServices) {
+      const svcExt = svc as typeof svc & { job?: string };
+      if (svcExt.job) {
+        const job = jobs.find(j => j.id === svcExt.job);
+        if (job) {
+          job.services = job.services || [];
+          job.services.push(svc);
+        }
+      }
+    }
+  }
+
   // Apply workflow-level defaults
   const cicd = ast.options?.cicd;
   if (cicd) {
@@ -139,7 +258,7 @@ export function buildJobGraph(ast: TWorkflowAST): CICDJob[] {
       if (cicd.variables && !job.variables) {
         job.variables = { ...cicd.variables };
       }
-      if (cicd.beforeScript && !job.beforeScript) {
+      if (cicd.beforeScript && job.beforeScript === undefined) {
         job.beforeScript = [...cicd.beforeScript];
       }
       if (cicd.tags && !job.tags) {

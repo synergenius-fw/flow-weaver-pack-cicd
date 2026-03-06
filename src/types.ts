@@ -51,6 +51,20 @@ export interface CICDJob {
   uploadArtifacts?: TCICDArtifact[];
   /** Artifact names to download before this job */
   downloadArtifacts?: string[];
+  /** Port-derived artifact download paths (keyed by artifact name) */
+  downloadArtifactPaths?: Record<string, string>;
+  /** Dotenv artifacts to load (from port metadata dotenv:true) */
+  dotenvArtifacts?: Array<{ name: string; path: string }>;
+  /** Dependencies that only need job ordering, not artifact transfer */
+  needsWithoutArtifacts?: string[];
+  /** Control per-dependency artifact download (jobId -> true/false) */
+  needsArtifactControl?: Record<string, boolean>;
+  /** Dependencies that should be optional (job continues if dep fails) */
+  optionalNeeds?: string[];
+  /** Simple parallelism count (e.g., parallel: 15 for cypress splitting) */
+  parallel?: number;
+  /** Skip all artifact downloads (dependencies: []) */
+  skipDependencies?: boolean;
   /** Maximum retry count on failure (from @job) */
   retry?: number;
   /** Conditions under which to retry (from @job retry_when) */
@@ -63,8 +77,8 @@ export interface CICDJob {
   variables?: Record<string, string>;
   /** Runner selection tags (from @job or @tags) */
   tags?: string[];
-  /** Setup commands before main script (from @job or @before_script) */
-  beforeScript?: string[];
+  /** Setup commands before main script (from @job or @before_script, null = explicit empty override) */
+  beforeScript?: string[] | null;
   /** Conditional execution rules (from @job) */
   rules?: Array<{ if?: string; when?: string; allowFailure?: boolean; variables?: Record<string, string>; changes?: string[] }>;
   /** Coverage regex pattern (from @job) */

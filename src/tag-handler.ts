@@ -118,12 +118,16 @@ function parseCache(text: string, d: DeployMap, warnings: string[]): void {
     warnings.push(`Invalid @cache format: @cache ${text}`);
     return;
   }
-  const cache: { strategy: string; path?: string; key?: string } = { strategy: parts[1] };
+  const cache: { strategy: string; path?: string; key?: string; policy?: string; files?: string[] } = { strategy: parts[1] };
   const rest = parts[2] || '';
   const keyMatch = rest.match(/key\s*=\s*"([^"]+)"/);
   if (keyMatch) cache.key = keyMatch[1];
   const pathMatch = rest.match(/path\s*=\s*"([^"]+)"/);
   if (pathMatch) cache.path = pathMatch[1];
+  const policyMatch = rest.match(/policy\s*=\s*"([^"]+)"/);
+  if (policyMatch) cache.policy = policyMatch[1];
+  const filesMatch = rest.match(/files\s*=\s*"([^"]+)"/);
+  if (filesMatch) cache.files = filesMatch[1].split(',').map(f => f.trim());
 
   const caches = (d['caches'] as typeof cache[] | undefined) ?? [];
   caches.push(cache);
@@ -232,10 +236,12 @@ function parseService(text: string, d: DeployMap, warnings: string[]): void {
     warnings.push(`@service requires image="...": @service ${text}`);
     return;
   }
-  const svc: { name: string; image: string; env?: Record<string, string>; ports?: string[] } = {
+  const svc: { name: string; image: string; env?: Record<string, string>; ports?: string[]; job?: string } = {
     name: nameMatch[1],
     image: imageMatch[1],
   };
+  const jobMatch = text.match(/job\s*=\s*"([^"]+)"/);
+  if (jobMatch) svc.job = jobMatch[1];
   const envMatch = text.match(/env\s*=\s*"([^"]+)"/);
   if (envMatch) {
     svc.env = {};
@@ -288,10 +294,15 @@ function parseJob(text: string, d: DeployMap, warnings: string[]): void {
 
   type JobConfig = {
     id: string; retry?: number; allowFailure?: boolean; timeout?: string;
-    variables?: Record<string, string>; tags?: string[]; beforeScript?: string[];
+    variables?: Record<string, string>; tags?: string[]; beforeScript?: string[] | null;
     rules?: Array<{ if?: string; when?: string; allowFailure?: boolean; variables?: Record<string, string>; changes?: string[] }>;
     coverage?: string; reports?: Array<{ type: string; path: string }>;
     runner?: string; extends?: string; stage?: string; retryWhen?: string[];
+    needsArtifactControl?: Record<string, boolean>;
+    optionalNeeds?: string[];
+    parallel?: number;
+    skipDependencies?: boolean;
+    artifacts?: Array<{ name: string; path: string; retention?: number }>;
   };
 
   const jobs = (d['jobs'] as JobConfig[] | undefined) ?? [];
@@ -353,7 +364,11 @@ function parseJob(text: string, d: DeployMap, warnings: string[]): void {
         break;
       }
       case 'before_script':
-        jc.beforeScript = value.split(',').map(s => s.trim()).filter(Boolean);
+        if (value === 'none' || value === '[]') {
+          jc.beforeScript = null;
+        } else {
+          jc.beforeScript = value.split(',').map(s => s.trim()).filter(Boolean);
+        }
         break;
       case 'rules':
         jc.rules = jc.rules || [];
@@ -381,6 +396,45 @@ function parseJob(text: string, d: DeployMap, warnings: string[]): void {
               path: pair.substring(eqIdx + 1).trim(),
             });
           }
+        }
+        break;
+      }
+      case 'needs_artifacts': {
+        jc.needsArtifactControl = jc.needsArtifactControl || {};
+        for (const pair of value.split(',')) {
+          const colonIdx = pair.indexOf(':');
+          if (colonIdx > 0) {
+            jc.needsArtifactControl[pair.substring(0, colonIdx).trim()] =
+              pair.substring(colonIdx + 1).trim() === 'true';
+          }
+        }
+        break;
+      }
+      case 'optional_needs':
+        jc.optionalNeeds = value.split(',').map(s => s.trim()).filter(Boolean);
+        break;
+      case 'parallel': {
+        const n = parseInt(value, 10);
+        if (!isNaN(n) && n > 0) jc.parallel = n;
+        else warnings.push(`Invalid parallel value "${value}" in @job ${jobId}`);
+        break;
+      }
+      case 'dependencies':
+        if (value === 'none' || value === '[]') {
+          jc.skipDependencies = true;
+        }
+        break;
+      case 'artifacts': {
+        jc.artifacts = jc.artifacts || [];
+        const paths = value.split(',').map(s => s.trim()).filter(Boolean);
+        const retMatch = rest.match(/retention\s*=\s*(\d+)/);
+        const retention = retMatch ? parseInt(retMatch[1], 10) : undefined;
+        for (const p of paths) {
+          jc.artifacts.push({
+            name: `${jobId}-artifacts`,
+            path: p,
+            ...(retention && { retention }),
+          });
         }
         break;
       }

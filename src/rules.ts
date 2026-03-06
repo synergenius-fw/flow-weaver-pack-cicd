@@ -128,12 +128,38 @@ export const artifactCrossJobRule: TValidationRule = {
     }
 
     if (crossJobPairs.size > 0 && artifacts.length === 0) {
-      const pairs = Array.from(crossJobPairs);
-      errors.push({
-        type: 'warning',
-        code: 'CICD_ARTIFACT_CROSS_JOB',
-        message: `Data flows between jobs (${pairs.join(', ')}) but no @artifact is declared. In CI/CD, each job runs in a fresh environment. Add @artifact declarations to pass data between jobs.`,
-      });
+      // Check if port-derived artifacts cover the cross-job connections
+      const nodeTypeLookup = new Map<string, { outputs?: Record<string, { metadata?: Record<string, unknown>; type?: string }> }>();
+      for (const nt of ast.nodeTypes) {
+        nodeTypeLookup.set(nt.name, nt);
+        if (nt.functionName !== nt.name) nodeTypeLookup.set(nt.functionName, nt);
+      }
+
+      let hasPortDerivedArtifacts = false;
+      for (const conn of ast.connections) {
+        if (conn.from.node.startsWith('secret:')) continue;
+        if (conn.from.node === 'Start' || conn.to.node === 'Exit') continue;
+        const fromJob = nodeJob.get(conn.from.node);
+        const toJob = nodeJob.get(conn.to.node);
+        if (fromJob && toJob && fromJob !== toJob) {
+          const fromNodeType = ast.instances.find(i => i.id === conn.from.node)?.nodeType;
+          const nt = fromNodeType ? nodeTypeLookup.get(fromNodeType) : undefined;
+          const portDef = nt?.outputs?.[conn.from.port];
+          if (portDef?.metadata?.artifactPath || portDef?.metadata?.dotenv) {
+            hasPortDerivedArtifacts = true;
+            break;
+          }
+        }
+      }
+
+      if (!hasPortDerivedArtifacts) {
+        const pairs = Array.from(crossJobPairs);
+        errors.push({
+          type: 'warning',
+          code: 'CICD_ARTIFACT_CROSS_JOB',
+          message: `Data flows between jobs (${pairs.join(', ')}) but no @artifact is declared. In CI/CD, each job runs in a fresh environment. Add @artifact declarations to pass data between jobs.`,
+        });
+      }
     }
 
     return errors;
