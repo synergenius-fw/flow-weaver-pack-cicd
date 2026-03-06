@@ -1,31 +1,514 @@
 {
-  "manifestVersion": 2,
+  "manifestVersion": 1,
   "name": "@synergenius/flowweaver-pack-cicd",
-  "version": "0.2.0",
-  "nodeTypes": [],
+  "version": "0.2.1",
+  "description": "CI/CD pipeline infrastructure and node types for Flow Weaver: tag handler, validation rules, job graph builder, and platform-native CI/CD node stubs",
+  "engineVersion": ">=0.17.7",
+  "categories": [
+    "cicd",
+    "automation",
+    "devops"
+  ],
+  "nodeTypes": [
+    {
+      "name": "waitForUrl",
+      "file": "dist/node-types/wait-for-url.js",
+      "functionName": "waitForUrl",
+      "isAsync": false,
+      "inputs": {
+        "url": {
+          "dataType": "STRING"
+        },
+        "timeoutSeconds": {
+          "dataType": "NUMBER"
+        },
+        "intervalSeconds": {
+          "dataType": "NUMBER"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "available": {
+          "dataType": "BOOLEAN"
+        },
+        "waitedSeconds": {
+          "dataType": "NUMBER"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "teal",
+        "icon": "schedule"
+      }
+    },
+    {
+      "name": "slackNotify",
+      "file": "dist/node-types/slack-notify.js",
+      "functionName": "slackNotify",
+      "isAsync": false,
+      "inputs": {
+        "webhookUrl": {
+          "dataType": "STRING"
+        },
+        "message": {
+          "dataType": "STRING"
+        },
+        "channel": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "sent": {
+          "dataType": "BOOLEAN"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "yellow",
+        "icon": "chat"
+      }
+    },
+    {
+      "name": "shellCommand",
+      "file": "dist/node-types/shell-command.js",
+      "functionName": "shellCommand",
+      "isAsync": false,
+      "inputs": {
+        "command": {
+          "dataType": "STRING"
+        },
+        "workingDirectory": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "stdout": {
+          "dataType": "STRING"
+        },
+        "exitCode": {
+          "dataType": "NUMBER"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "gray",
+        "icon": "terminal"
+      }
+    },
+    {
+      "name": "setupPython",
+      "file": "dist/node-types/setup-python.js",
+      "functionName": "setupPython",
+      "isAsync": false,
+      "inputs": {
+        "version": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "pythonVersion": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "blue",
+        "icon": "terminal"
+      }
+    },
+    {
+      "name": "setupNode",
+      "file": "dist/node-types/setup-node.js",
+      "functionName": "setupNode",
+      "isAsync": false,
+      "inputs": {
+        "version": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "nodeVersion": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "green",
+        "icon": "terminal"
+      }
+    },
+    {
+      "name": "npmTest",
+      "file": "dist/node-types/npm-test.js",
+      "functionName": "npmTest",
+      "isAsync": false,
+      "inputs": {
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "exitCode": {
+          "dataType": "NUMBER"
+        },
+        "testOutput": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "teal",
+        "icon": "check_circle"
+      }
+    },
+    {
+      "name": "npmInstall",
+      "file": "dist/node-types/npm-install.js",
+      "functionName": "npmInstall",
+      "isAsync": false,
+      "inputs": {
+        "npmToken": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "nodeModulesPath": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "green",
+        "icon": "package"
+      }
+    },
+    {
+      "name": "npmBuild",
+      "file": "dist/node-types/npm-build.js",
+      "functionName": "npmBuild",
+      "isAsync": false,
+      "inputs": {
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "output": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "orange",
+        "icon": "build"
+      }
+    },
+    {
+      "name": "healthCheck",
+      "file": "dist/node-types/health-check.js",
+      "functionName": "healthCheck",
+      "isAsync": false,
+      "inputs": {
+        "url": {
+          "dataType": "STRING"
+        },
+        "retries": {
+          "dataType": "NUMBER"
+        },
+        "delaySeconds": {
+          "dataType": "NUMBER"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "healthy": {
+          "dataType": "BOOLEAN"
+        },
+        "statusCode": {
+          "dataType": "NUMBER"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "green",
+        "icon": "favorite"
+      }
+    },
+    {
+      "name": "dockerPush",
+      "file": "dist/node-types/docker-push.js",
+      "functionName": "dockerPush",
+      "isAsync": false,
+      "inputs": {
+        "imageId": {
+          "dataType": "STRING"
+        },
+        "tags": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "digest": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "blue",
+        "icon": "cloud_upload"
+      }
+    },
+    {
+      "name": "dockerLogin",
+      "file": "dist/node-types/docker-login.js",
+      "functionName": "dockerLogin",
+      "isAsync": false,
+      "inputs": {
+        "registry": {
+          "dataType": "STRING"
+        },
+        "username": {
+          "dataType": "STRING"
+        },
+        "password": {
+          "dataType": "STRING"
+        },
+        "token": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "loggedIn": {
+          "dataType": "BOOLEAN"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "blue",
+        "icon": "lock"
+      }
+    },
+    {
+      "name": "dockerBuild",
+      "file": "dist/node-types/docker-build.js",
+      "functionName": "dockerBuild",
+      "isAsync": false,
+      "inputs": {
+        "context": {
+          "dataType": "STRING"
+        },
+        "dockerfile": {
+          "dataType": "STRING"
+        },
+        "tags": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "imageId": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "blue",
+        "icon": "layers"
+      }
+    },
+    {
+      "name": "deploySsh",
+      "file": "dist/node-types/deploy-ssh.js",
+      "functionName": "deploySsh",
+      "isAsync": false,
+      "inputs": {
+        "host": {
+          "dataType": "STRING"
+        },
+        "sshKey": {
+          "dataType": "STRING"
+        },
+        "sourcePath": {
+          "dataType": "STRING"
+        },
+        "remotePath": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "result": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "purple",
+        "icon": "cloud_upload"
+      }
+    },
+    {
+      "name": "deployS3",
+      "file": "dist/node-types/deploy-s3.js",
+      "functionName": "deployS3",
+      "isAsync": false,
+      "inputs": {
+        "bucket": {
+          "dataType": "STRING"
+        },
+        "sourcePath": {
+          "dataType": "STRING"
+        },
+        "accessKey": {
+          "dataType": "STRING"
+        },
+        "secretKey": {
+          "dataType": "STRING"
+        },
+        "region": {
+          "dataType": "STRING"
+        },
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "url": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "orange",
+        "icon": "cloud_upload"
+      }
+    },
+    {
+      "name": "checkout",
+      "file": "dist/node-types/checkout.js",
+      "functionName": "checkout",
+      "isAsync": false,
+      "inputs": {
+        "execute": {
+          "dataType": "STEP"
+        }
+      },
+      "outputs": {
+        "repoPath": {
+          "dataType": "STRING"
+        },
+        "onSuccess": {
+          "dataType": "STEP"
+        },
+        "onFailure": {
+          "dataType": "STEP"
+        }
+      },
+      "visuals": {
+        "color": "gray",
+        "icon": "download"
+      }
+    }
+  ],
   "workflows": [],
-  "patterns": [],
-  "tagHandlers": [
-    {
-      "tags": [
-        "secret", "runner", "cache", "artifact", "environment", "matrix",
-        "service", "concurrency", "job", "stage", "variables",
-        "before_script", "tags", "includes", "_cicdTrigger"
-      ],
-      "namespace": "cicd",
-      "scope": "workflow",
-      "file": "dist/tag-handler.js",
-      "exportName": "cicdTagHandler"
-    }
-  ],
-  "validationRuleSets": [
-    {
-      "name": "CI/CD Rules",
-      "namespace": "cicd",
-      "file": "dist/rules.js",
-      "detectExport": "isCICDWorkflow",
-      "rulesExport": "getCICDValidationRules"
-    }
-  ],
-  "exportTargets": []
+  "patterns": []
 }
