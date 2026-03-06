@@ -251,21 +251,9 @@ export function buildJobGraph(ast: TWorkflowAST): CICDJob[] {
     }
   }
 
-  // Apply workflow-level defaults
-  const cicd = ast.options?.cicd;
-  if (cicd) {
-    for (const job of jobs) {
-      if (cicd.variables && !job.variables) {
-        job.variables = { ...cicd.variables };
-      }
-      if (cicd.beforeScript && job.beforeScript === undefined) {
-        job.beforeScript = [...cicd.beforeScript];
-      }
-      if (cicd.tags && !job.tags) {
-        job.tags = [...cicd.tags];
-      }
-    }
-  }
+  // Workflow-level variables, beforeScript, and tags are rendered at the
+  // top level by YAML renderers (GHA env, GitLab variables/before_script).
+  // Do NOT duplicate them into individual jobs, they inherit automatically.
 
   return topoSortJobs(jobs);
 }
