@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -12,6 +14,21 @@ export function dockerPush(
   imageId: string = '',
   tags: string = 'latest',
 ): { digest: string } {
-  // Stub: CI/CD export maps this to docker/build-push-action@v6 with push: true
-  return { digest: `sha256:pushed-${Date.now()}` };
+  const tagList = tags
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  let digest = '';
+  for (const tag of tagList) {
+    const ref = imageId.includes(':') ? imageId : `${imageId}:${tag}`;
+    const output = execSync(`docker push ${ref}`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const match = output.match(/digest:\s*(sha256:[a-f0-9]+)/i);
+    if (match) digest = match[1];
+  }
+
+  return { digest: digest || imageId };
 }

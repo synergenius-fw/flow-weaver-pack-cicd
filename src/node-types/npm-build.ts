@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -7,6 +9,6 @@
  * @output output [order:0] - Build output directory path
  */
 export function npmBuild(): { output: string } {
-  // Stub: CI/CD export maps this to `npm run build`
+  execSync('npm run build', { encoding: 'utf-8', stdio: 'inherit' });
   return { output: 'dist' };
 }

@@ -1,3 +1,6 @@
+import { execSync } from 'node:child_process';
+import * as path from 'node:path';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -8,9 +11,10 @@
  * @output nodeModulesPath [order:0] - Path to node_modules
  */
 export function npmInstall(npmToken?: string): { nodeModulesPath: string } {
-  // Stub: CI/CD export maps this to `npm ci`
+  const env = { ...process.env };
   if (npmToken) {
-    // Would set NPM_TOKEN env var
+    env.NPM_TOKEN = npmToken;
   }
-  return { nodeModulesPath: 'node_modules' };
+  execSync('npm ci', { encoding: 'utf-8', stdio: 'inherit', env });
+  return { nodeModulesPath: path.resolve('node_modules') };
 }

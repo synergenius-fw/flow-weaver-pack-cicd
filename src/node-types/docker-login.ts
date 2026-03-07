@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -16,6 +18,17 @@ export function dockerLogin(
   password?: string,
   token?: string,
 ): { loggedIn: boolean } {
-  // Stub: CI/CD export maps this to docker/login-action@v3
+  const credential = password || token || '';
+  const user = username || (token ? 'oauth2accesstoken' : '');
+
+  if (!user || !credential) {
+    throw new Error('dockerLogin requires username+password or token');
+  }
+
+  execSync(`docker login -u ${user} --password-stdin ${registry}`, {
+    input: credential,
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
   return { loggedIn: true };
 }

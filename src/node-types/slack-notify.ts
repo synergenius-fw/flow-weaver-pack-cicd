@@ -9,11 +9,22 @@
  * @input channel [order:2] - Channel override (optional)
  * @output sent [order:0] - Whether notification was sent
  */
-export function slackNotify(
+export async function slackNotify(
   webhookUrl: string = '',
   message: string = 'Pipeline complete',
   channel?: string,
-): { sent: boolean } {
-  // Stub: CI/CD export maps this to slackapi/slack-github-action@v1
+): Promise<{ sent: boolean }> {
+  const payload: Record<string, string> = { text: message };
+  if (channel) payload.channel = channel;
+
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Slack webhook failed: ${response.status} ${response.statusText}`);
+  }
   return { sent: true };
 }

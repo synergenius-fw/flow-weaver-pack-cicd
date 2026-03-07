@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -8,6 +10,15 @@
  * @output testOutput [order:1] - Test output text
  */
 export function npmTest(): { exitCode: number; testOutput: string } {
-  // Stub: CI/CD export maps this to `npm test`
-  return { exitCode: 0, testOutput: 'All tests passed' };
+  try {
+    const output = execSync('npm test', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return { exitCode: 0, testOutput: output.trimEnd() };
+  } catch (err: unknown) {
+    const e = err as { status?: number; stdout?: string; stderr?: string };
+    const output = (e.stdout || '') + (e.stderr || '');
+    return { exitCode: e.status ?? 1, testOutput: output.trimEnd() };
+  }
 }

@@ -10,11 +10,26 @@
  * @output healthy [order:0] - Whether the URL is healthy
  * @output statusCode [order:1] - HTTP status code
  */
-export function healthCheck(
+export async function healthCheck(
   url: string = '',
   retries: number = 10,
   delaySeconds: number = 5,
-): { healthy: boolean; statusCode: number } {
-  // Stub: CI/CD export maps this to curl with retries
-  return { healthy: true, statusCode: 200 };
+): Promise<{ healthy: boolean; statusCode: number }> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, { method: 'GET' });
+      if (response.ok) {
+        return { healthy: true, statusCode: response.status };
+      }
+      if (attempt === retries) {
+        return { healthy: false, statusCode: response.status };
+      }
+    } catch {
+      if (attempt === retries) {
+        return { healthy: false, statusCode: 0 };
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1000));
+  }
+  return { healthy: false, statusCode: 0 };
 }

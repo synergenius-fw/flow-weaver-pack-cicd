@@ -8,6 +8,17 @@
  * @output nodeVersion [order:0] - Installed Node.js version
  */
 export function setupNode(version: string = '20'): { nodeVersion: string } {
-  // Stub: CI/CD export maps this to actions/setup-node@v4
-  return { nodeVersion: version };
+  // In CI the platform provisions Node.js (actions/setup-node, GitLab image).
+  // Validate that the running version matches what the workflow expects.
+  const actual = process.versions.node;
+  const majorActual = actual.split('.')[0];
+  const majorExpected = version.split('.')[0];
+
+  if (majorActual !== majorExpected) {
+    console.warn(
+      `[setupNode] Expected Node.js ${version} but running ${actual}. ` +
+      `Ensure your CI runner/image provides the correct version.`,
+    );
+  }
+  return { nodeVersion: actual };
 }

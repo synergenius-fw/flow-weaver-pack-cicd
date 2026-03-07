@@ -10,11 +10,25 @@
  * @output available [order:0] - Whether the URL became available
  * @output waitedSeconds [order:1] - How long we waited
  */
-export function waitForUrl(
+export async function waitForUrl(
   url: string = '',
   timeoutSeconds: number = 300,
   intervalSeconds: number = 10,
-): { available: boolean; waitedSeconds: number } {
-  // Stub: CI/CD export maps this to a polling loop
-  return { available: true, waitedSeconds: 0 };
+): Promise<{ available: boolean; waitedSeconds: number }> {
+  const start = Date.now();
+  const deadline = start + timeoutSeconds * 1000;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(url, { method: 'GET' });
+      if (response.ok) {
+        return { available: true, waitedSeconds: Math.round((Date.now() - start) / 1000) };
+      }
+    } catch {
+      // not available yet
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalSeconds * 1000));
+  }
+
+  return { available: false, waitedSeconds: timeoutSeconds };
 }

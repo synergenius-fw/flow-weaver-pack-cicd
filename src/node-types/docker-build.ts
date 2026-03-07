@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -14,6 +16,16 @@ export function dockerBuild(
   dockerfile: string = 'Dockerfile',
   tags: string = 'latest',
 ): { imageId: string } {
-  // Stub: CI/CD export maps this to docker/build-push-action@v6
-  return { imageId: `sha256:stub-${Date.now()}` };
+  const tagArgs = tags
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => `-t ${t}`)
+    .join(' ');
+
+  const output = execSync(
+    `docker build -f ${dockerfile} ${tagArgs} --quiet ${context}`,
+    { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
+  );
+  return { imageId: output.trim() };
 }

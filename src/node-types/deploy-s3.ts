@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -18,6 +20,16 @@ export function deployS3(
   secretKey: string = '',
   region: string = 'us-east-1',
 ): { url: string } {
-  // Stub: CI/CD export maps this to aws-actions/configure-aws-credentials@v4 + aws s3 sync
-  return { url: `s3://${bucket}/${sourcePath}` };
+  const env = {
+    ...process.env,
+    AWS_ACCESS_KEY_ID: accessKey,
+    AWS_SECRET_ACCESS_KEY: secretKey,
+    AWS_DEFAULT_REGION: region,
+  };
+  execSync(`aws s3 sync ${sourcePath} s3://${bucket}`, {
+    encoding: 'utf-8',
+    stdio: 'inherit',
+    env,
+  });
+  return { url: `s3://${bucket}` };
 }

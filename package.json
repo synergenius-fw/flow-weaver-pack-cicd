@@ -1,7 +1,7 @@
 {
   "name": "@synergenius/flowweaver-pack-cicd",
-  "version": "0.2.6",
-  "description": "CI/CD pipeline infrastructure and node types for Flow Weaver: tag handler, validation rules, job graph builder, and platform-native CI/CD node stubs",
+  "version": "0.2.5",
+  "description": "CI/CD pipeline infrastructure for Flow Weaver: tag handler, validation rules, job graph builder, runtime code generator, and executable CI/CD node types",
   "keywords": [
     "flowweaver-marketplace-pack",
     "flow-weaver",
@@ -13,7 +13,7 @@
   ],
   "flowWeaver": {
     "type": "marketplace-pack",
-    "engineVersion": ">=0.17.7",
+    "engineVersion": ">=0.17.0",
     "categories": [
       "cicd",
       "automation",
@@ -21,7 +21,7 @@
     ]
   },
   "peerDependencies": {
-    "@synergenius/flow-weaver": ">=0.17.7"
+    "@synergenius/flow-weaver": ">=0.17.0"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

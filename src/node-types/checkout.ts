@@ -7,6 +7,7 @@
  * @output repoPath [order:0] - Path to checked-out repository
  */
 export function checkout(): { repoPath: string } {
-  // Stub: CI/CD export maps this to actions/checkout@v4 or GitLab's built-in checkout
+  // In CI the platform already checked out the repo (actions/checkout, GitLab runner).
+  // This node confirms the working directory is the repo root.
   return { repoPath: process.cwd() };
 }

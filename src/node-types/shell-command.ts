@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 /**
  * @flowWeaver nodeType
  * @expression
@@ -13,6 +15,16 @@ export function shellCommand(
   command: string = 'echo "hello"',
   workingDirectory: string = '.',
 ): { stdout: string; exitCode: number } {
-  // Stub: CI/CD export maps this to a `run:` step
-  return { stdout: '', exitCode: 0 };
+  try {
+    const stdout = execSync(command, {
+      cwd: workingDirectory,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return { stdout: stdout.trimEnd(), exitCode: 0 };
+  } catch (err: unknown) {
+    const e = err as { status?: number; stdout?: string; stderr?: string };
+    const output = (e.stdout || '') + (e.stderr || '');
+    return { stdout: output.trimEnd(), exitCode: e.status ?? 1 };
+  }
 }
