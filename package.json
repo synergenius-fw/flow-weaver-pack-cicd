@@ -1,5 +1,5 @@
 {
-  "name": "@synergenius/flowweaver-pack-cicd",
+  "name": "@synergenius/flow-weaver-pack-cicd",
   "version": "0.2.7",
   "description": "CI/CD pipeline infrastructure for Flow Weaver: tag handler, validation rules, job graph builder, runtime code generator, and executable CI/CD node types",
   "keywords": [
@@ -48,6 +48,6 @@
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "https://github.com/synergenius-fw/flowweaver-pack-cicd"
+    "url": "https://github.com/synergenius-fw/flow-weaver-pack-cicd"
   }
 }
