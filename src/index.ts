@@ -1,5 +1,5 @@
 /**
- * @synergenius/flowweaver-pack-cicd
+ * @synergenius/flow-weaver-pack-cicd
  *
  * CI/CD pipeline infrastructure for Flow Weaver: tag handler, detection,
  * validation rules, job graph builder, and runtime types.
