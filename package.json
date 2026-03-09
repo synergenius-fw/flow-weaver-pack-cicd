@@ -1,6 +1,6 @@
 {
   "name": "@synergenius/flow-weaver-pack-cicd",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "CI/CD pipeline infrastructure for Flow Weaver: tag handler, validation rules, job graph builder, runtime code generator, and executable CI/CD node types",
   "keywords": [
     "flow-weaver-marketplace-pack",
