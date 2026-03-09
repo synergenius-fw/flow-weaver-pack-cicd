@@ -13,6 +13,7 @@ export { cicdTagHandler } from './tag-handler.js';
 export { isCICDWorkflow, getJobNames, getDeclaredSecrets, getReferencedSecrets } from './detection.js';
 export { getCICDValidationRules } from './rules.js';
 export { buildJobGraph } from './job-graph.js';
+export { generateCICDRuntime } from './generator.js';
 export { resolveJobSecrets } from './secrets.js';
 export { injectArtifactSteps } from './artifacts.js';
 export { generateSecretsDoc } from './secrets-doc.js';
